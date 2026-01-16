@@ -16,13 +16,7 @@
 struct Point {
   double x;
   double y;
-
-  // Point()
-  
-  // Point(double x, double y) {
-  //   this->x = x;
-  //   this->y = y;
-  // }
+  double z;
 };
 
 #define INT_POINTS 0
@@ -58,40 +52,15 @@ private:
 
     std::unordered_map<std::string, Point> goals=
     {
-        {"p1", {-6.0, -4.5}},
-        {"p2", {-6.0, 7.5}},
-        {"p3", {6.0, -4.5}},
-        {"p4", {6.0, 7.5}},
-        {"base", {0.0, 0.0}}
+        {"p1", {-6.0, -4.5, -2.357}},
+        {"p2", {-6.0, 7.5, 2.357}},
+        {"p3", {6.0, -4.5, -0.785}},
+        {"p4", {6.0, 7.5, 0.785}},
+        {"base", {0.0, 0.0, 0.0}}
     };
 
     std::string wp_to_navigate = args[1];
     std::string wp_starting_point = args[2];
-
-
-    // double goal_x, goal_y;
-    // if (wp_to_navigate == "p1") {
-    //   goal_x = -6.0;
-    //   goal_y = -4.5;
-    // } else if (wp_to_navigate == "p2") {
-    //   goal_x = -6.0;
-    //   goal_y = 7.5;
-    // }else if (wp_to_navigate == "p3") {
-    //   goal_x = 6.0;
-    //   goal_y = -4.5;
-    // }else if (wp_to_navigate == "p4") {
-    //   goal_x = 6.0;
-    //   goal_y = 7.5;
-    // }else if (wp_to_navigate == "base") {
-    //   goal_x = 0.0;
-    //   goal_y = 0.0;
-    // } else {
-    //   RCLCPP_ERROR(get_logger(), "Unknown waypoint: %s", wp_to_navigate.c_str());
-    //   finish(false, 0.0, "Unknown waypoint");
-    //   return;
-    // }
-
-
 
     if (!goal_sent_) {
       if (!nav2_client_->wait_for_action_server(1s)) {
@@ -101,8 +70,6 @@ private:
 
       const Point starting = goals[wp_starting_point];
       const Point ending = goals[wp_to_navigate];
-
-      // std::array<Point, INT_POINTS + 1> intermediate_points;
       std::cout << "Starting point " << "x: " << starting.x << "y: " << starting.y << std::endl;
 
       auto goal_msg = nav2_msgs::action::NavigateThroughPoses::Goal();
@@ -112,9 +79,9 @@ private:
         pose.header.frame_id = "map";
         pose.pose.position.x = ((INT_POINTS - i) * starting.x + (i + 1) * ending.x) / (INT_POINTS + 1.0);
         pose.pose.position.y = ((INT_POINTS - i) * starting.y + (i + 1) * ending.y) / (INT_POINTS + 1.0);
-        std::cout << "Intermediate point " << i << "x: " << pose.pose.position.x << "y: " << pose.pose.position.y << std::endl;
+        pose.pose.orientation.z = ending.z;
+        std::cout << "Intermediate point " << i << " x: " << pose.pose.position.x << " y: " << pose.pose.position.y << " orientation:" << pose.pose.orientation.z << std::endl;
         
-        //pose.pose.orientation.w = 1.0;
         goal_msg.poses.push_back(pose);
       }
 
@@ -138,6 +105,7 @@ private:
               progress_ = 1.0;
               // rclcpp_info(get_logger(), "reached waypoint:");
               finish(true, 1.0, "move completed");
+
             } else {
               // rclcpp_error(get_logger(), "navigation failed");
               finish(true, 1.0, "move failed");
@@ -156,18 +124,6 @@ private:
       start_y_ = current_y_;
     }
 
-    // double total_dist = std::hypot(goal_x - start_x_, goal_y - start_y_);
-    // double rem_dist   = std::hypot(goal_x - current_x_, goal_y - current_y_);
-    // progress_ = total_dist > 0.0 ? 1.0 - std::min(rem_dist / total_dist, 1.0) : 1.0;
-
-    // send_feedback(progress_, "Moving to " + wp_to_navigate);
-
-    // if (rem_dist < 0.6) {
-    //   goal_sent_= false;
-    //   progress_ = 1.0;
-    //   send_feedback(progress_, "Moving to " + wp_to_navigate);
-    //   RCLCPP_INFO(get_logger(), "Reached waypoint: %s", wp_to_navigate.c_str());
-    // }
 
     rclcpp::spin_some(nav2_node_);
   }
