@@ -5,6 +5,14 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "lifecycle_msgs/msg/transition.hpp"
 #include "nav2_msgs/action/navigate_through_poses.hpp"
+#include "cv_bridge/cv_bridge.hpp"
+#include "image_transport/image_transport.hpp"
+#include "opencv2/highgui.hpp"
+#include "rclcpp/logging.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/image.hpp"
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/aruco.hpp>
 #include <memory>
 #include <chrono>
 #include <string>
@@ -12,6 +20,7 @@
 #include <cmath>
 #include <unordered_map>
 #include <array>
+#include <iostream>
 
 struct Point {
   double x;
@@ -23,6 +32,27 @@ struct Point {
 
 using namespace std::chrono_literals;
 
+void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg){
+  try {
+    cv::Mat img = cv_bridge::toCvShare(msg, "bgr8")->image;
+    std::vector<int> markerIds;
+    std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
+    cv::Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_ARUCO_ORIGINAL);
+    cv::aruco::detectMarkers(img, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
+    for(int i = 0; i < markerIds.size(); i++){
+      std::cout << "Marker: " << markerIds[i] << ", Corners: ";
+      for(int j = 0; j < markerCorners.size(); j++){
+        std::cout << markerCorners[i][j] << ",";
+      }
+      std::cout << std::endl;
+    }
+  } catch (cv_bridge::Exception & e) {
+    RCLCPP_ERROR(rclcpp::get_logger("subscriber"), "cv_bridge exception: %s", e.what());
+    return;
+  }
+}
+
 class DetectIdAction : public plansys2::ActionExecutorClient
 {
 public:
@@ -33,6 +63,21 @@ public:
       "/odom", 10,
       std::bind(&DetectIdAction::odom_callback, this, std::placeholders::_1)
     );
+
+    // this->declare_parameter<std::string>("image_transport", "compressed");
+    // // cv::namedWindow("view");t
+    // // cv::startWindowThread();
+    // rclcpp::NodeOptions options;
+    // this->node = rclcpp::Node::make_shared("image_listener", options);
+    // image_transport::ImageTransport it(node);
+    // image_transport::TransportHints hints(node.get());
+    // // image_transport::Subscriber sub = it.subscribe(
+    // //   "camera/image", 
+    // //   1, 
+    // //   std::bind(&DetectIdAction::image_callback, this, std::placeholders::_1), 
+    // //   &hints
+    // // );
+    // image_transport::Subscriber sub = it.subscribe("camera/image", 1, imageCallback, &hints);
 
     nav2_node_ = rclcpp::Node::make_shared("move_action_nav2_client");
 
@@ -113,7 +158,6 @@ private:
         };
           
   
-
       // send_goal_options.feedback_callback = feedback_callback;
       send_goal_options.result_callback = result_callback;
         
@@ -124,8 +168,36 @@ private:
       start_y_ = current_y_;
     }
 
-
     rclcpp::spin_some(nav2_node_);
+  }
+
+  void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr &msg){
+    try {
+      cv::Mat img = cv_bridge::toCvShare(msg, "bgr8")->image;
+      // cv::imshow("Received Image", img);
+      // cv::waitKey(1);
+      std::vector<int> markerIds;
+      std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
+      cv::Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
+      cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_ARUCO_ORIGINAL);
+      cv::aruco::detectMarkers(img, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
+      // cv::aruco::DetectorParameters detectorParams = cv::aruco::DetectorParameters();
+      // cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_ARUCO_ORIGINAL);
+      // cv::aruco::ArucoDetector detector(dictionary, detectorParams);
+      // detector.detectMarkers(img, markerCorners, markerIds, rejectedCandidates);
+      
+      for(int i = 0; i < markerIds.size(); i++){
+        std::cout << "Marker: " << markerIds[i] << ", Corners: ";
+        for(int j = 0; j < markerCorners.size(); j++){
+          std::cout << markerCorners[i][j] << ",";
+        }
+        std::cout << std::endl;
+      }
+
+    } catch (cv_bridge::Exception & e) {
+      RCLCPP_ERROR(rclcpp::get_logger("subscriber"), "cv_bridge exception: %s", e.what());
+    return;
+    }
   }
 
   void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
@@ -139,6 +211,7 @@ private:
   double start_x_ = 0.0, start_y_ = 0.0;
   double current_x_ = 0.0, current_y_ = 0.0;
 
+  // rclcpp::Node::SharedPtr node;
   rclcpp::Node::SharedPtr nav2_node_;
   rclcpp_action::Client<nav2_msgs::action::NavigateThroughPoses>::SharedPtr nav2_client_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_;

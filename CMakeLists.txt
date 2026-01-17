@@ -17,7 +17,11 @@ find_package(plansys2_executor REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
-
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(image_transport REQUIRED)
 
 add_executable(get_plan src/getplan.cpp)
 add_executable(get_plan_and_execute src/getplan_and_execute.cpp)
@@ -27,6 +31,7 @@ add_executable(charge_action_node src/charge_action_node.cpp)
 add_executable(move_action_node_2 src/move_action_node_2.cpp)
 add_executable(move_action_node_3 src/move_action_node_3.cpp)
 add_executable(detect_id src/detect_id.cpp)
+add_executable(carms src/carms.cpp)
 
 ament_target_dependencies(get_plan
   rclcpp
@@ -93,6 +98,21 @@ ament_target_dependencies(detect_id
   plansys2_msgs
   geometry_msgs
   nav2_msgs
+  sensor_msgs 
+  cv_bridge OpenCV
+  image_transport
+)
+
+ament_target_dependencies(carms
+  rclcpp
+  rclcpp_action
+  plansys2_executor
+  plansys2_msgs
+  geometry_msgs
+  nav2_msgs
+  sensor_msgs 
+  cv_bridge OpenCV
+  image_transport
 )
 
 install(DIRECTORY
@@ -102,7 +122,7 @@ install(DIRECTORY
 )
 
 install(TARGETS
-  get_plan get_plan_and_execute move_action_node ask_charge_action_node charge_action_node move_action_node_2 move_action_node_3 detect_id
+  get_plan get_plan_and_execute move_action_node ask_charge_action_node charge_action_node move_action_node_2 move_action_node_3 detect_id carms
   DESTINATION lib/${PROJECT_NAME}
 )
 

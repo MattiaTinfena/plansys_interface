@@ -134,7 +134,15 @@ def generate_launch_description():
         namespace=namespace,
         output='screen',
         parameters=[]) 
-           
+    
+    carms = Node(
+        package='plansys_interface',
+        executable='carms',
+        name='carms',
+        namespace=namespace,
+        output='screen',
+        parameters=[]) 
+    
     move_cmd = Node(
         package='plansys_interface',
         executable='move_action_node_3',
@@ -176,6 +184,7 @@ def generate_launch_description():
     ld.add_action(executor_cmd)
     ld.add_action(lifecycle_manager_cmd)
     ld.add_action(detect_id_cmd)
+    ld.add_action(carms)
     # ld.add_action(move_cmd)
     # ld.add_action(charge_cmd)
     # ld.add_action(ask_charge_cmd)
