@@ -32,14 +32,32 @@ struct Point {
 
 using namespace std::chrono_literals;
 
-void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg){
+void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr & msg){
   try {
     cv::Mat img = cv_bridge::toCvShare(msg, "bgr8")->image;
+    cv::imshow("Received Image", img);
+    cv::waitKey(1);
     std::vector<int> markerIds;
     std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
     cv::Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_ARUCO_ORIGINAL);
     cv::aruco::detectMarkers(img, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
+    
+    geometry_msgs::msg::Point message;
+
+    if(markerIds.size() == 1 ){
+        message.z = markerIds[0];
+        double x_center = 0, y_center = 0;
+
+        for(int i = 0; i < markerCorners[0].size(); i++){
+            x_center += markerCorners[0][i].x;
+            y_center += markerCorners[0][i].y;
+        }
+        message.x = x_center/4.0;
+        message.y = y_center/4.0;
+        // publisher->publish(message);
+    }
+
     for(int i = 0; i < markerIds.size(); i++){
       std::cout << "Marker: " << markerIds[i] << ", Corners: ";
       for(int j = 0; j < markerCorners.size(); j++){
@@ -63,21 +81,6 @@ public:
       "/odom", 10,
       std::bind(&DetectIdAction::odom_callback, this, std::placeholders::_1)
     );
-
-    // this->declare_parameter<std::string>("image_transport", "compressed");
-    // // cv::namedWindow("view");t
-    // // cv::startWindowThread();
-    // rclcpp::NodeOptions options;
-    // this->node = rclcpp::Node::make_shared("image_listener", options);
-    // image_transport::ImageTransport it(node);
-    // image_transport::TransportHints hints(node.get());
-    // // image_transport::Subscriber sub = it.subscribe(
-    // //   "camera/image", 
-    // //   1, 
-    // //   std::bind(&DetectIdAction::image_callback, this, std::placeholders::_1), 
-    // //   &hints
-    // // );
-    // image_transport::Subscriber sub = it.subscribe("camera/image", 1, imageCallback, &hints);
 
     nav2_node_ = rclcpp::Node::make_shared("move_action_nav2_client");
 
@@ -171,35 +174,6 @@ private:
     rclcpp::spin_some(nav2_node_);
   }
 
-  void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr &msg){
-    try {
-      cv::Mat img = cv_bridge::toCvShare(msg, "bgr8")->image;
-      // cv::imshow("Received Image", img);
-      // cv::waitKey(1);
-      std::vector<int> markerIds;
-      std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
-      cv::Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
-      cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_ARUCO_ORIGINAL);
-      cv::aruco::detectMarkers(img, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
-      // cv::aruco::DetectorParameters detectorParams = cv::aruco::DetectorParameters();
-      // cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_ARUCO_ORIGINAL);
-      // cv::aruco::ArucoDetector detector(dictionary, detectorParams);
-      // detector.detectMarkers(img, markerCorners, markerIds, rejectedCandidates);
-      
-      for(int i = 0; i < markerIds.size(); i++){
-        std::cout << "Marker: " << markerIds[i] << ", Corners: ";
-        for(int j = 0; j < markerCorners.size(); j++){
-          std::cout << markerCorners[i][j] << ",";
-        }
-        std::cout << std::endl;
-      }
-
-    } catch (cv_bridge::Exception & e) {
-      RCLCPP_ERROR(rclcpp::get_logger("subscriber"), "cv_bridge exception: %s", e.what());
-    return;
-    }
-  }
-
   void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
   {
     current_x_ = msg->pose.pose.position.x;
@@ -211,7 +185,6 @@ private:
   double start_x_ = 0.0, start_y_ = 0.0;
   double current_x_ = 0.0, current_y_ = 0.0;
 
-  // rclcpp::Node::SharedPtr node;
   rclcpp::Node::SharedPtr nav2_node_;
   rclcpp_action::Client<nav2_msgs::action::NavigateThroughPoses>::SharedPtr nav2_client_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_;
@@ -220,13 +193,28 @@ private:
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<DetectIdAction>();
 
-  node->set_parameter(rclcpp::Parameter("action_name", "detect_id"));
-  node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
-  node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
+  auto detect_id_node = std::make_shared<DetectIdAction>();
+  detect_id_node->set_parameter(rclcpp::Parameter("action_name", "detect_id"));
+  detect_id_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
+  detect_id_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
-  rclcpp::spin(node->get_node_base_interface());
+  rclcpp::NodeOptions options;
+  auto image_listener_node = rclcpp::Node::make_shared("image_listener", options);
+  image_listener_node->declare_parameter<std::string>("image_transport", "compressed");
+  // cv::namedWindow("view");
+  // cv::startWindowThread();
+  image_transport::ImageTransport it(image_listener_node);
+  image_transport::TransportHints hints(image_listener_node.get());
+
+  image_transport::Subscriber sub = it.subscribe("camera/image", 1, image_callback, &hints);
+  
+  rclcpp::executors::SingleThreadedExecutor executor;
+
+  executor.add_node(detect_id_node->get_node_base_interface());
+  executor.add_node(image_listener_node->get_node_base_interface());
+
+  executor.spin();
 
   rclcpp::shutdown();
 
