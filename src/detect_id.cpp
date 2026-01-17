@@ -22,6 +22,7 @@
 #include <array>
 #include <iostream>
 
+rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr velocity_publisher;
 struct Point {
   double x;
   double y;
@@ -31,8 +32,13 @@ struct Point {
 #define INT_POINTS 0
 
 using namespace std::chrono_literals;
+bool align, finished;
 
 void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr & msg){
+  if (!align) {
+    return;
+  }
+
   try {
     cv::Mat img = cv_bridge::toCvShare(msg, "bgr8")->image;
     cv::imshow("Received Image", img);
@@ -44,27 +50,51 @@ void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr & msg){
     cv::aruco::detectMarkers(img, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
     
     geometry_msgs::msg::Point message;
+    
+    int x_center = 0, y_center = 0;
 
     if(markerIds.size() == 1 ){
         message.z = markerIds[0];
-        double x_center = 0, y_center = 0;
 
         for(int i = 0; i < markerCorners[0].size(); i++){
             x_center += markerCorners[0][i].x;
             y_center += markerCorners[0][i].y;
         }
-        message.x = x_center/4.0;
-        message.y = y_center/4.0;
-        // publisher->publish(message);
+        x_center /= 4;
+        y_center /= 4;
     }
 
-    for(int i = 0; i < markerIds.size(); i++){
-      std::cout << "Marker: " << markerIds[i] << ", Corners: ";
-      for(int j = 0; j < markerCorners.size(); j++){
-        std::cout << markerCorners[i][j] << ",";
-      }
-      std::cout << std::endl;
+    const int x_error = 640/2 - x_center;
+
+    std::cout << "x_error: " << x_error<< std::endl;
+
+
+    geometry_msgs::msg::Twist twist{};
+
+    if (std::abs(x_error) < 20) {
+      finished = true;
+      align = false;
+      std::cout << "CORRECTLY ALIGNED" << std::endl;
+      velocity_publisher->publish(twist);
+      return;
     }
+
+    if (x_error < 0) {
+      twist.angular.z = -0.2;
+    } else {
+      twist.angular.z = 0.2;
+    }
+    velocity_publisher->publish(twist);
+    std::cout << "SETTING VELOCITY ANGULAR Z: " << twist.angular.z;
+
+
+    // for(int i = 0; i < markerIds.size(); i++){
+    //   std::cout << "Marker: " << markerIds[i] << ", Corners: ";
+    //   for(int j = 0; j < markerCorners.size(); j++){
+    //     std::cout << markerCorners[i][j] << ",";
+    //   }
+    //   std::cout << std::endl;
+    // }
   } catch (cv_bridge::Exception & e) {
     RCLCPP_ERROR(rclcpp::get_logger("subscriber"), "cv_bridge exception: %s", e.what());
     return;
@@ -86,6 +116,8 @@ public:
 
     nav2_client_  = rclcpp_action::create_client<nav2_msgs::action::NavigateThroughPoses>(
             nav2_node_, "navigate_through_poses");
+
+    // domain_expert_ = std::make_shared<plansys2::DomainExpertClient>(shared_from_this());
   }
 
 private:
@@ -94,6 +126,7 @@ private:
     auto args = get_arguments();
     if (args.size() == 0) {
       RCLCPP_ERROR(get_logger(), "Not enough arguments for move action");
+      this->goal_sent_= false;
       finish(false, 0.0, "Insufficient arguments");
       return;
     }
@@ -135,33 +168,33 @@ private:
 
       auto send_goal_options = rclcpp_action::Client<nav2_msgs::action::NavigateThroughPoses>::SendGoalOptions();
 
-      auto feedback_callback = [this]
-        (const std::shared_ptr<const nav2_msgs::action::NavigateThroughPoses::Feedback> feedback)
-        {
-          std::cout << "Number of poses remainings: " << feedback->number_of_poses_remaining << std::endl;
-          if (feedback->number_of_poses_remaining <= 0) {
-
-            finish(true, 1.0, "move completed");
-          }
-        };
+      // auto feedback_callback = [this]
+      //   (const std::shared_ptr<const nav2_msgs::action::NavigateThroughPoses::Feedback> feedback)
+      //   {
+      //     std::cout << "Number of poses remainings: " << feedback->number_of_poses_remaining << std::endl;
+      //     if (feedback->number_of_poses_remaining <= 0) {
+      //       align = true;
+      //     }
+      //   };
 
       auto result_callback = [this]
         (const rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateThroughPoses>::WrappedResult & result)
         {
             if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
-              this->goal_sent_= false;
               progress_ = 1.0;
               // rclcpp_info(get_logger(), "reached waypoint:");
-              finish(true, 1.0, "move completed");
+              // finish(true, 1.0, "move completed");
 
+              // nav2_client_->async_cancel_all_goals();
+              std::cout << "canceled goals" << std::endl;
+
+              align = true;
             } else {
               // rclcpp_error(get_logger(), "navigation failed");
-              finish(true, 1.0, "move failed");
+              // finish(true, 1.0, "move failed");
             }
         };
           
-  
-      // send_goal_options.feedback_callback = feedback_callback;
       send_goal_options.result_callback = result_callback;
         
       nav2_client_->async_send_goal(goal_msg, send_goal_options);
@@ -188,7 +221,9 @@ private:
   rclcpp::Node::SharedPtr nav2_node_;
   rclcpp_action::Client<nav2_msgs::action::NavigateThroughPoses>::SharedPtr nav2_client_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_;
+  std::shared_ptr<plansys2::DomainExpertClient> domain_expert_;
 };
+
 
 int main(int argc, char ** argv)
 {
@@ -208,6 +243,8 @@ int main(int argc, char ** argv)
   image_transport::TransportHints hints(image_listener_node.get());
 
   image_transport::Subscriber sub = it.subscribe("camera/image", 1, image_callback, &hints);
+  velocity_publisher = image_listener_node->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+
   
   rclcpp::executors::SingleThreadedExecutor executor;
 

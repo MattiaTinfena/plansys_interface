@@ -31,7 +31,6 @@ add_executable(charge_action_node src/charge_action_node.cpp)
 add_executable(move_action_node_2 src/move_action_node_2.cpp)
 add_executable(move_action_node_3 src/move_action_node_3.cpp)
 add_executable(detect_id src/detect_id.cpp)
-add_executable(carms src/carms.cpp)
 
 ament_target_dependencies(get_plan
   rclcpp
@@ -103,18 +102,6 @@ ament_target_dependencies(detect_id
   image_transport
 )
 
-ament_target_dependencies(carms
-  rclcpp
-  rclcpp_action
-  plansys2_executor
-  plansys2_msgs
-  geometry_msgs
-  nav2_msgs
-  sensor_msgs 
-  cv_bridge OpenCV
-  image_transport
-)
-
 install(DIRECTORY
   domain
   launch
@@ -122,7 +109,7 @@ install(DIRECTORY
 )
 
 install(TARGETS
-  get_plan get_plan_and_execute move_action_node ask_charge_action_node charge_action_node move_action_node_2 move_action_node_3 detect_id carms
+  get_plan get_plan_and_execute move_action_node ask_charge_action_node charge_action_node move_action_node_2 move_action_node_3 detect_id
   DESTINATION lib/${PROJECT_NAME}
 )
 
