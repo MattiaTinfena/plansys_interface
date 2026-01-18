@@ -32,43 +32,41 @@
     )
 
     (:durative-action detect_id
-        :parameters (?r - robot ?p1 ?p2 - point ?m - marker)
+        :parameters (?r - robot ?p1 ?p2 - point ?m1 - marker)
         :duration ( = ?duration 5)
         :condition (and
             (at start(detecting ?r))
-            (over all(marker_at ?m ?p1))
-            (at start(unvisited ?m))
+            (over all(marker_at ?m1 ?p1))
+            (at start(unvisited ?m1))
             (at start(robot_at ?r ?p2))
             (at start (robot_free ?r))
+            ; (at start(is_first ?m1))
+
         )
         :effect (and
             (at start(not(robot_free ?r)))
             (at end(robot_free ?r))
             (at end(robot_at ?r ?p1))
             (at end(not(robot_at ?r ?p2)))
-            (at end(not(unvisited ?m)))
-            (at end(visited ?m))
+            (at end(not(unvisited ?m1)))
+            (at end(visited ?m1))
             (at end(increase (num_id_detected) 1))
         )
     )
-    
+
     (:durative-action change_to_acquire_state
-        :parameters (?r - robot ?m1 ?m2 ?m3 ?m4 - marker)
+        :parameters (?r - robot ?m1 - marker)
         :duration ( = ?duration 3)
         :condition (and 
             (at start(detecting ?r))
-            (at start(= (num_id_detected) (num_marker)))
-            ;(at start(robot_free ?r))
-            ; (at start(visited ?m1))
-            ; (at start(visited ?m2))
-            ; (at start(visited ?m3))
-            ; (at start(visited ?m4))
+            (at start(robot_free ?r))
+            (at start(visited ?m1))
         )
         :effect(and
             (at end(not(detecting ?r)))
             (at end(acquiring_imgs ?r))
-            ; (at start(not(robot_free ?r)))
-            ; (at end(robot_free ?r))
+            (at start(not(robot_free ?r)))
+            (at end(robot_free ?r))
 
 
         )
@@ -126,7 +124,7 @@
             (at start(robot_free ?r))
             (at start(is_base ?base))
             (at start(robot_at ?r ?p))
-            (at start(= (num_photo_taken) (num_marker)))
+            ; (at start(= (num_photo_taken) (num_marker)))
         )
         :effect (and 
             (at start(not(robot_free ?r)))

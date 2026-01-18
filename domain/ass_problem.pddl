@@ -46,11 +46,16 @@
 
     (:goal
         ( and
-            (photo_taken m1)            
-            (photo_taken m2)      
-            (photo_taken m3)      
-            (photo_taken m4)  
-            (robot_at robot1 base)    
+            (visited m1)
+            (visited m2)
+            (visited m3)
+            (visited m4)
+            (acquiring_imgs robot1)
+            ; (photo_taken m1)            
+            ; (photo_taken m2)      
+            ; (photo_taken m3)      
+            ; (photo_taken m4)  
+            ; (robot_at robot1 base)    
         )
     )
 )

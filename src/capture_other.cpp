@@ -43,7 +43,7 @@ private:
       return;
     }
 
-    std::cout << "CAPTURE OTHER IMGS";
+    std::cout << "CAPTURE OTHER IMGS"<< std::endl;
     finish(true, 1.0, "Other images captured");
 
   }
