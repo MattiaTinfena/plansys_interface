@@ -43,7 +43,7 @@ private:
       return;
     }
 
-    std::cout << "CAPTURE FIRST IMG";
+    std::cout << "CAPTURE FIRST IMG" << std::endl;
     finish(true, 1.0, "First image captured");
 
   }
