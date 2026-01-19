@@ -98,6 +98,15 @@ void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr &msg) {
 	}
 }
 
+geometry_msgs::msg::Pose make_pose(double x, double y, double qz, double qw) {
+	geometry_msgs::msg::Pose p;
+	p.position.x = x;
+	p.position.y = y;
+	p.orientation.z = qz;
+	p.orientation.w = qw;
+	return p;
+}
+
 class DetectIdAction : public plansys2::ActionExecutorClient {
 	using GoToPoint = plansys_interface::action::GoToPoint;
 	using GoalHandleGoToPoint = rclcpp_action::ClientGoalHandle<GoToPoint>;
@@ -113,7 +122,6 @@ class DetectIdAction : public plansys2::ActionExecutorClient {
 
   private:
 	void do_work() override {
-		// std::cout << "do work" << std::endl;
 
 		auto args = get_arguments();
 		if (args.size() == 0) {
@@ -134,14 +142,15 @@ class DetectIdAction : public plansys2::ActionExecutorClient {
 		// this->problem_expert_->updateFunction(plansys2::Function(
 		// 	"(= (marker_id m1)" + std::to_string(100) + ")"));
 
-		// std::unordered_map<std::string, Point> goals = {
-		// 	{"p1", {-6.0, -4.5, -2.357}},
-		// 	{"p2", {-6.0, 7.5, 2.357}},
-		// 	{"p3", {6.0, -4.5, -0.785}},
-		// 	{"p4", {6.0, 7.5, 0.785}},
-		// 	{"base", {0.0, 0.0, 0.0}}};
+		std::unordered_map<std::string, geometry_msgs::msg::Pose> goals{};
 
-		// std::string wp_to_navigate = args[1];
+		goals["p1"] = make_pose(-6.0, -4.5, -0.9238, 0.3826);
+		goals["p2"] = make_pose(-6.0, 7.5, 0.9238, 0.3826);
+		goals["p3"] = make_pose(6.0, -4.5, -0.3826, 0.9238);
+		goals["p4"] = make_pose(6.0, 7.5, 0.3826, 0.9238);
+		goals["base"] = make_pose(0.0, 0.0, 0.0, 0.0);
+
+		std::string wp_to_navigate = args[1];
 		// std::string wp_starting_point = args[2];
 
 		if (!goal_sent_) {
@@ -151,10 +160,7 @@ class DetectIdAction : public plansys2::ActionExecutorClient {
 			}
 			GoToPoint::Goal goal_msg{};
 
-			goal_msg.goal.position.x = -6.0;
-			goal_msg.goal.position.y = -4.5;
-			goal_msg.goal.orientation.z = -0.9238;
-			goal_msg.goal.orientation.w = 0.3826;
+			goal_msg.goal = goals[wp_to_navigate];
 			RCLCPP_INFO(get_logger(), "goal created");
 
 			goal_sent_ = true;
