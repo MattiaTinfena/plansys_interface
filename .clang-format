@@ -1,0 +1,4 @@
+---
+UseTab: Always       # Use tabs for indentation instead of spaces
+IndentWidth: 4       # Number of columns per indentation level
+TabWidth: 4          # Width of a tab character in spaces
