@@ -22,6 +22,9 @@ find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(image_transport REQUIRED)
+find_package(action_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
 
 add_executable(get_plan src/getplan.cpp)
 add_executable(get_plan_and_execute src/getplan_and_execute.cpp)
@@ -34,7 +37,14 @@ add_executable(detect_id src/detect_id.cpp)
 add_executable(change_state src/change_state.cpp)
 add_executable(capture_first src/capture_first.cpp)
 add_executable(capture_other src/capture_other.cpp)
+add_executable(go_to_point_action src/go_to_point_action.cpp)
 
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/GoToPoint.action"
+  DEPENDENCIES geometry_msgs action_msgs
+)
+rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
+target_link_libraries(go_to_point_action "${cpp_typesupport_target}")
 
 ament_target_dependencies(get_plan
   rclcpp
@@ -142,6 +152,19 @@ ament_target_dependencies(capture_other
   image_transport
 )
 
+
+ament_target_dependencies(go_to_point_action
+  rclcpp
+  rclcpp_action
+  plansys2_executor
+  plansys2_msgs
+  geometry_msgs
+  nav2_msgs
+  sensor_msgs 
+  cv_bridge OpenCV
+  image_transport
+)
+
 install(DIRECTORY
   domain
   launch
@@ -149,7 +172,7 @@ install(DIRECTORY
 )
 
 install(TARGETS
-  get_plan get_plan_and_execute move_action_node ask_charge_action_node charge_action_node move_action_node_2 move_action_node_3 detect_id change_state capture_first capture_other
+  get_plan get_plan_and_execute move_action_node ask_charge_action_node charge_action_node move_action_node_2 move_action_node_3 detect_id change_state capture_first capture_other go_to_point_action
   DESTINATION lib/${PROJECT_NAME}
 )
 
