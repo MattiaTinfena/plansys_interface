@@ -118,7 +118,6 @@ def generate_launch_description():
             # 'plan_solver_plugins': ['DFGHJ']
         }.items())
 
-   
     lifecycle_manager_cmd = Node(
         package='plansys2_lifecycle_manager',
         executable='lifecycle_manager_node',
@@ -159,7 +158,7 @@ def generate_launch_description():
         namespace=namespace,
         output='screen',
         parameters=[])
-        
+    
     ld = LaunchDescription()
 
     ld.add_action(declare_model_file_cmd)
@@ -170,7 +169,7 @@ def generate_launch_description():
     ld.add_action(declare_start_action_bt_file_cmd)
     ld.add_action(declare_end_action_bt_file_cmd)
     ld.add_action(declare_bt_builder_plugin_cmd)
-    
+
     ld.add_action(domain_expert_cmd)
     ld.add_action(problem_expert_cmd)
     ld.add_action(planner_cmd)
@@ -180,5 +179,6 @@ def generate_launch_description():
     ld.add_action(change_state_cmd)
     ld.add_action(capture_first_cmd)
     ld.add_action(capture_other_cmd)
+
 
     return ld

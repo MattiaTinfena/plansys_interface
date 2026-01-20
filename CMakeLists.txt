@@ -25,14 +25,7 @@ find_package(image_transport REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
-
-add_executable(get_plan src/getplan.cpp)
 add_executable(get_plan_and_execute src/getplan_and_execute.cpp)
-add_executable(move_action_node src/move_action_node.cpp)
-add_executable(ask_charge_action_node src/ask_charge_action_node.cpp)
-add_executable(charge_action_node src/charge_action_node.cpp)
-add_executable(move_action_node_2 src/move_action_node_2.cpp)
-add_executable(move_action_node_3 src/move_action_node_3.cpp)
 add_executable(detect_id src/detect_id.cpp)
 add_executable(change_state src/change_state.cpp)
 add_executable(capture_first src/capture_first.cpp)
@@ -49,15 +42,6 @@ target_link_libraries(detect_id "${cpp_typesupport_target}")
 target_link_libraries(capture_first "${cpp_typesupport_target}")  
 target_link_libraries(capture_other "${cpp_typesupport_target}")
 
-ament_target_dependencies(get_plan
-  rclcpp
-  plansys2_pddl_parser
-  plansys2_msgs
-  plansys2_domain_expert
-  plansys2_planner
-  plansys2_problem_expert
-)
-
 ament_target_dependencies(get_plan_and_execute
   rclcpp
   plansys2_pddl_parser
@@ -67,44 +51,6 @@ ament_target_dependencies(get_plan_and_execute
   plansys2_problem_expert
   plansys2_executor
   rclcpp_action
-)
-
-ament_target_dependencies(move_action_node
-  rclcpp
-  rclcpp_action
-  plansys2_executor
-  plansys2_msgs
-)
-
-ament_target_dependencies(ask_charge_action_node
-  rclcpp
-  rclcpp_action
-  plansys2_executor
-  plansys2_msgs
-)
-
-ament_target_dependencies(charge_action_node
-  rclcpp
-  rclcpp_action
-  plansys2_executor
-  plansys2_msgs
-)
-
-ament_target_dependencies(move_action_node_2
-  rclcpp
-  rclcpp_action
-  plansys2_executor
-  plansys2_msgs
-  geometry_msgs
-)
-
-ament_target_dependencies(move_action_node_3
-  rclcpp
-  rclcpp_action
-  plansys2_executor
-  plansys2_msgs
-  geometry_msgs
-  nav2_msgs
 )
 
 ament_target_dependencies(detect_id
@@ -171,11 +117,12 @@ ament_target_dependencies(go_to_point_action
 install(DIRECTORY
   domain
   launch
+  config
   DESTINATION share/${PROJECT_NAME}
 )
 
 install(TARGETS
-  get_plan get_plan_and_execute move_action_node ask_charge_action_node charge_action_node move_action_node_2 move_action_node_3 detect_id change_state capture_first capture_other go_to_point_action
+  get_plan_and_execute detect_id change_state capture_first capture_other go_to_point_action
   DESTINATION lib/${PROJECT_NAME}
 )
 
