@@ -10,6 +10,7 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
 
     pkg_erl2 = get_package_share_directory('erl2')
+    # pkg_exp_rob_ass2 = get_package_share_directory('exp_rob_ass2')
 
     namespace = LaunchConfiguration('namespace')
 
@@ -32,7 +33,7 @@ def generate_launch_description():
 
 
     navigation_params_path = os.path.join(
-        get_package_share_directory('ros2_navigation'),
+        get_package_share_directory('exp_rob_ass2'),
         'config',
         'navigation.yaml'
     )
@@ -45,7 +46,7 @@ def generate_launch_description():
     )
 
     slam_toolbox_params_path = os.path.join(
-        get_package_share_directory('ros2_navigation'),
+        get_package_share_directory('exp_rob_ass2'),
         'config',
         'slam_toolbox_mapping.yaml'
     ) 
@@ -72,7 +73,7 @@ def generate_launch_description():
         description='Namespace')
 
     go_to_point_cmd = Node(
-        package='plansys_interface',
+        package='exp_rob_ass2',
         executable='go_to_point_action',
         name='go_to_point',
         namespace=namespace,

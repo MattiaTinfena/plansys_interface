@@ -11,7 +11,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     bringup_dir = get_package_share_directory('plansys2_bringup')
     print ("bringup_dir:", bringup_dir)
-    interface_dir = get_package_share_directory('plansys_interface')
+    interface_dir = get_package_share_directory('exp_rob_ass2')
     model_file = LaunchConfiguration('model_file')
     problem_file = LaunchConfiguration('problem_file')
     namespace = LaunchConfiguration('namespace')
@@ -127,7 +127,7 @@ def generate_launch_description():
         parameters=[])
     
     detect_id_cmd = Node(
-        package='plansys_interface',
+        package='exp_rob_ass2',
         executable='detect_id',
         name='detect_id',
         namespace=namespace,
@@ -136,7 +136,7 @@ def generate_launch_description():
     
     
     change_state_cmd = Node(
-        package='plansys_interface',
+        package='exp_rob_ass2',
         executable='change_state',
         name='change_state',
         namespace=namespace,
@@ -144,7 +144,7 @@ def generate_launch_description():
         parameters=[])
 
     capture_first_cmd = Node(
-        package='plansys_interface',
+        package='exp_rob_ass2',
         executable='capture_first',
         name='capture_first',
         namespace=namespace,
@@ -152,7 +152,7 @@ def generate_launch_description():
         parameters=[])
 
     capture_other_cmd = Node(
-        package='plansys_interface',
+        package='exp_rob_ass2',
         executable='capture_other',
         name='capture_other',
         namespace=namespace,

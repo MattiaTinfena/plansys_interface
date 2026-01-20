@@ -1,4 +1,5 @@
 #include "cv_bridge/cv_bridge.hpp"
+#include "exp_rob_ass2/action/go_to_point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "image_transport/image_transport.hpp"
 #include "lifecycle_msgs/msg/transition.hpp"
@@ -7,7 +8,6 @@
 #include "opencv2/highgui.hpp"
 #include "plansys2_executor/ActionExecutorClient.hpp"
 #include "plansys2_problem_expert/ProblemExpertClient.hpp"
-#include "plansys_interface/action/go_to_point.hpp"
 #include "rclcpp/logging.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
@@ -34,7 +34,7 @@ geometry_msgs::msg::Pose make_pose(double x, double y, double qz, double qw) {
 	return p;
 }
 class CaptureOtherAction : public plansys2::ActionExecutorClient {
-	using GoToPoint = plansys_interface::action::GoToPoint;
+	using GoToPoint = exp_rob_ass2::action::GoToPoint;
 	using GoalHandleGoToPoint = rclcpp_action::ClientGoalHandle<GoToPoint>;
 
   public:
@@ -72,7 +72,6 @@ class CaptureOtherAction : public plansys2::ActionExecutorClient {
 			GoToPoint::Goal goal_msg{};
 			goal_msg.goal = goals[wp_to_navigate];
 			goal_msg.capture_img = true;
-			RCLCPP_INFO(get_logger(), "goal created");
 
 			goal_sent_ = true;
 
@@ -83,7 +82,6 @@ class CaptureOtherAction : public plansys2::ActionExecutorClient {
 				[this, wp_to_navigate](
 					const GoalHandleGoToPoint::WrappedResult &result) {
 					if (result.result->success) {
-						std::cout << "Goal reached" << std::endl;
 						finish(true, 1.0, "Id detected");
 						goal_sent_ = false;
 
@@ -92,16 +90,13 @@ class CaptureOtherAction : public plansys2::ActionExecutorClient {
 						goal_sent_ = false;
 					}
 				};
-			RCLCPP_INFO(get_logger(), "goal options created");
 
 			go_to_point_client_->async_send_goal(goal_msg, send_goal_options);
-			RCLCPP_INFO(get_logger(), "goal sent");
 		}
-		// std::cout << "CAPTURE OTHER IMG  " << wp_to_navigate << std::endl;
 	}
 	std::shared_ptr<plansys2::ProblemExpertClient> problem_expert_;
 
-	rclcpp_action::Client<plansys_interface::action::GoToPoint>::SharedPtr
+	rclcpp_action::Client<exp_rob_ass2::action::GoToPoint>::SharedPtr
 		go_to_point_client_;
 	bool goal_sent_;
 	float progress_;

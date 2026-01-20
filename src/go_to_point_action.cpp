@@ -1,9 +1,9 @@
 #include "cv_bridge/cv_bridge.hpp"
+#include "exp_rob_ass2/action/go_to_point.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 #include "image_transport/image_transport.hpp"
 #include "nav2_msgs/action/navigate_to_pose.hpp"
 #include "nav_msgs/msg/odometry.hpp"
-#include "plansys_interface/action/go_to_point.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include <opencv2/aruco.hpp>
@@ -11,7 +11,7 @@
 
 #include <cmath>
 
-using GoToPoint = plansys_interface::action::GoToPoint;
+using GoToPoint = exp_rob_ass2::action::GoToPoint;
 using GoalHandleGoToPoint = rclcpp_action::ServerGoalHandle<GoToPoint>;
 
 using namespace std::chrono_literals;
@@ -135,9 +135,6 @@ void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr &msg) {
 				twist.angular.z = 0.2;
 			}
 		} else {
-			std::cout << "CORRECTLY ALIGNED" << std::endl;
-			// velocity_publisher->publish(twist);
-			// auto result_msg = std::make_shared<GoToPoint::Result>();
 			result_msg->success = true;
 			result_msg->detected_id = markerIds[0];
 
@@ -154,21 +151,14 @@ void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr &msg) {
 			for (int i = 0; i < 4; i++) {
 				double act_dist = std::hypot(x_center - markerCorners[0][i].x,
 											 y_center - markerCorners[0][i].y);
-				std::cout << "act_dist: " << act_dist << std::endl;
-
 				if (radius < act_dist) {
 					radius = act_dist;
 				}
 			}
 			if (radius < 160 * 0.5) {
-				std::cout << "Radius: " << radius << std::endl;
 				twist.linear.x = 0.2;
 			} else {
 				align = false;
-
-				std::cout << "Radius: " << radius << std::endl;
-				std::cout << "Center : " << x_center << ", " << y_center
-						  << std::endl;
 
 				cv::Point center((int)x_center, (int)y_center);
 

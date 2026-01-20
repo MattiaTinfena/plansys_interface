@@ -70,7 +70,6 @@ class ChangeStateAction : public plansys2::ActionExecutorClient {
 			finish(false, 0.0, "Insufficient arguments");
 			return;
 		}
-		std::cout << "CHANGE STATE" << std::endl;
 		finish(true, 1.0, "State changed");
 
 		rclcpp::sleep_for(1s);
@@ -111,8 +110,6 @@ class ChangeStateAction : public plansys2::ActionExecutorClient {
 		}
 
 		rclcpp::sleep_for(1s);
-
-		//--------------------STATE CHANGED------------------------------
 
 		executor_client_->cancel_plan_execution();
 		auto domain = domain_expert_->getDomain();

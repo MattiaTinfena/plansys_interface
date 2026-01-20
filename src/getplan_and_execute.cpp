@@ -69,46 +69,8 @@ class Controller : public rclcpp::Node {
   private:
 	void action_feedback_callback(
 		const plansys2_msgs::msg::ActionExecutionInfo::SharedPtr msg) {
-		if (msg->action_full_name != ":0") {
-			action_completion_map_[msg->action_full_name] = msg->completion;
-			std::cout << "Action: " << msg->action_full_name
-					  << " | Completion: " << (msg->completion * 100.0) << "%"
-					  << " | Status: ";
-			switch (msg->status) {
-			case plansys2_msgs::msg::ActionExecutionInfo::NOT_EXECUTED:
-				std::cout << "NOT_EXECUTED";
-				break;
-			case plansys2_msgs::msg::ActionExecutionInfo::EXECUTING:
-				std::cout << "EXECUTING";
-				break;
-			case plansys2_msgs::msg::ActionExecutionInfo::SUCCEEDED:
-				std::cout << "SUCCEEDED";
-				break;
-			case plansys2_msgs::msg::ActionExecutionInfo::FAILED:
-				std::cout << "FAILED";
-				break;
-			case plansys2_msgs::msg::ActionExecutionInfo::CANCELLED:
-				std::cout << "CANCELLED";
-				break;
-			default:
-				std::cout << "UNKNOWN";
-				break;
-			}
-			std::cout << std::endl;
-		}
 
-		bool all_done = true;
-		for (auto &a : action_completion_map_) {
-			if (a.second < 1.0) {
-				all_done = false;
-				break;
-			}
-		}
-
-		if (all_done) {
-			std::cout << "Everything done!!" << std::endl;
-			rclcpp::shutdown();
-		}
+		rclcpp::shutdown();
 	}
 	std::shared_ptr<plansys2::DomainExpertClient> domain_expert_;
 	std::shared_ptr<plansys2::PlannerClient> planner_client_;
@@ -124,7 +86,7 @@ int main(int argc, char **argv) {
 	auto node = std::make_shared<Controller>();
 	node->init();
 	node->plan();
-	rclcpp::spin(node);
+	rclcpp::spin_some(node);
 	rclcpp::shutdown();
 	return 0;
 }
