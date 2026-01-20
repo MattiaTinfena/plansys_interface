@@ -61,17 +61,6 @@ class DetectIdAction : public plansys2::ActionExecutorClient {
 			return;
 		}
 
-		// auto id_1 = this->problem_expert_->getFunction("marker_id m1");
-
-		// std::cout << "name:" << id_1->name << "value:" << id_1->value
-		// 		  << std::endl;
-
-		// id_1->value += 1;
-
-		// this->problem_expert_->updateFunction(*id_1);
-		// this->problem_expert_->updateFunction(plansys2::Function(
-		// 	"(= (marker_id m1)" + std::to_string(100) + ")"));
-
 		std::unordered_map<std::string, geometry_msgs::msg::Pose> goals{};
 
 		goals["p1"] = make_pose(-6.0, -4.5, -0.9238, 0.3826);
@@ -90,6 +79,7 @@ class DetectIdAction : public plansys2::ActionExecutorClient {
 			GoToPoint::Goal goal_msg{};
 
 			goal_msg.goal = goals[wp_to_navigate];
+			goal_msg.capture_img = true;
 			RCLCPP_INFO(get_logger(), "goal created");
 
 			goal_sent_ = true;

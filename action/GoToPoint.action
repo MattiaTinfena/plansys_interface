@@ -1,5 +1,6 @@
 # Goal
 geometry_msgs/Pose goal
+bool capture_img
 ---
 # Result
 bool success

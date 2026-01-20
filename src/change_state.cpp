@@ -5,7 +5,13 @@
 #include "nav2_msgs/action/navigate_through_poses.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "opencv2/highgui.hpp"
+#include "plansys2_domain_expert/DomainExpertClient.hpp"
 #include "plansys2_executor/ActionExecutorClient.hpp"
+#include "plansys2_executor/ExecutorClient.hpp"
+#include "plansys2_msgs/msg/action_execution_info.hpp"
+#include "plansys2_msgs/msg/plan.hpp"
+#include "plansys2_pddl_parser/Utils.hpp"
+#include "plansys2_planner/PlannerClient.hpp"
 #include "plansys2_problem_expert/ProblemExpertClient.hpp"
 #include "rclcpp/logging.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -14,23 +20,15 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include "plansys2_domain_expert/DomainExpertClient.hpp"
-#include "plansys2_executor/ExecutorClient.hpp"
-#include "plansys2_msgs/msg/action_execution_info.hpp"
-#include "plansys2_msgs/msg/plan.hpp"
-#include "plansys2_pddl_parser/Utils.hpp"
-#include "plansys2_planner/PlannerClient.hpp"
-#include "plansys2_problem_expert/ProblemExpertClient.hpp"
-
 #include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <ostream>
 #include <string>
-#include <unordered_map>
 
 using namespace std::chrono_literals;
 
@@ -77,14 +75,40 @@ class ChangeStateAction : public plansys2::ActionExecutorClient {
 
 		rclcpp::sleep_for(1s);
 
-		// this->problem_expert_->removePredicate(
-		// 	plansys2::Predicate("(is_first m3)"));
-		// this->problem_expert_->removePredicate(
-		// 	plansys2::Predicate("(is_next m4 m3)"));
-		// this->problem_expert_->removePredicate(
-		// 	plansys2::Predicate("(is_next m1 m4)"));
-		// this->problem_expert_->removePredicate(
-		// 	plansys2::Predicate("(is_next m2 m1)"));
+		this->problem_expert_->removePredicate(
+			plansys2::Predicate("(is_first m3)"));
+		this->problem_expert_->removePredicate(
+			plansys2::Predicate("(is_next m4 m3)"));
+		this->problem_expert_->removePredicate(
+			plansys2::Predicate("(is_next m1 m4)"));
+		this->problem_expert_->removePredicate(
+			plansys2::Predicate("(is_next m2 m1)"));
+
+		std::map<int, int> marker_ids;
+
+		for (int i = 0; i < 4; ++i) {
+			int marker_name = i + 1;
+			auto id_function = this->problem_expert_->getFunction(
+				"marker_id m" + std::to_string(marker_name));
+			marker_ids[id_function->value] = marker_name;
+		}
+
+		int prev_marker = -1;
+		for (const auto &[id, marker_num] : marker_ids) {
+			std::cout << "id: " << id << " marker_num: " << marker_num
+					  << std::endl;
+			if (prev_marker == -1) {
+				this->problem_expert_->addPredicate(plansys2::Predicate(
+					"(is_first m" + std::to_string(marker_num) + ")"));
+				prev_marker = marker_num;
+
+				continue;
+			}
+			this->problem_expert_->addPredicate(
+				plansys2::Predicate("(is_next m" + std::to_string(marker_num) +
+									" m" + std::to_string(prev_marker) + ")"));
+			prev_marker = marker_num;
+		}
 
 		// this->problem_expert_->addPredicate(
 		// 	plansys2::Predicate("(is_first m1)"));
@@ -95,9 +119,10 @@ class ChangeStateAction : public plansys2::ActionExecutorClient {
 		// this->problem_expert_->addPredicate(
 		// 	plansys2::Predicate("(is_next m4 m3)"));
 
-		// rclcpp::sleep_for(1s);
+		rclcpp::sleep_for(1s);
 
-		//---------------------------STATE CHANGED------------------------------
+		//---------------------------STATE
+		// CHANGED------------------------------
 
 		executor_client_->cancel_plan_execution();
 		auto domain = domain_expert_->getDomain();

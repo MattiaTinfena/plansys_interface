@@ -9,6 +9,8 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include <cmath>
+
 using GoToPoint = plansys_interface::action::GoToPoint;
 using GoalHandleGoToPoint = rclcpp_action::ServerGoalHandle<GoToPoint>;
 
@@ -127,6 +129,31 @@ void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr &msg) {
 				auto result_msg = std::make_shared<GoToPoint::Result>();
 				result_msg->success = true;
 				result_msg->detected_id = markerIds[0];
+
+				if (go_to_point_node->goal_handle->get_goal()->capture_img) {
+					double radius = 0;
+					for (int i = 0; i < 4; i++) {
+						double act_dist =
+							std::hypot(x_center - markerCorners[0][i].x,
+									   y_center - markerCorners[0][i].y);
+						std::cout << "act_dist: " << act_dist << std::endl;
+
+						if (radius < act_dist) {
+							radius = act_dist;
+						}
+					}
+					std::cout << "Radius: " << radius << std::endl;
+					std::cout << "Center : " << x_center << ", " << y_center
+							  << std::endl;
+
+					cv::Point center((int)x_center, (int)y_center);
+
+					cv::circle(img, center, (int)radius, cv::Scalar(0, 0, 255),
+							   1);
+					cv::imshow("Image with circle", img);
+					cv::waitKey(1);
+				}
+
 				go_to_point_node->goal_handle->succeed(result_msg);
 				return;
 			}
@@ -156,7 +183,8 @@ int main(int argc, char **argv) {
 		rclcpp::Node::make_shared("image_listener", options);
 	image_listener_node->declare_parameter<std::string>("image_transport",
 														"compressed");
-
+	cv::namedWindow("Image with circle");
+	cv::startWindowThread();
 	image_transport::ImageTransport it(image_listener_node);
 	image_transport::TransportHints hints(image_listener_node.get());
 

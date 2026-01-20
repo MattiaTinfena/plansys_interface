@@ -2,8 +2,8 @@
     (:requirements :strips :typing :durative-actions :fluents)
 
     (:types
-        robot
-        point
+        robot 
+        point 
         marker
     )
 
@@ -57,7 +57,7 @@
     (:durative-action change_to_acquire_state
         :parameters (?r - robot ?m1 - marker)
         :duration ( = ?duration 3)
-        :condition (and 
+        :condition (and
             (at start(detecting ?r))
             (at start(robot_free ?r))
             (at start(visited ?m1))
@@ -68,29 +68,28 @@
             (at start(not(robot_free ?r)))
             (at end(robot_free ?r))
 
-
         )
     )
 
     (:durative-action capture_first_img
-        :parameters (?r - robot ?p1 ?p2 - point ?m1 - marker)
+        :parameters (?r - robot ?p1 - point ?m1 - marker)
         :duration ( = ?duration 5)
         :condition (and
             (at start(photo_untaken ?m1))
             (at start(is_first ?m1))
             (at start(acquiring_imgs ?r))
             (over all(marker_at ?m1 ?p1))
-            (at start(robot_at ?r ?p2))
+            ;(at start(robot_at ?r ?p2))
             (at start(robot_free ?r))
         )
         :effect (and
             (at start(not(robot_free ?r)))
             (at end(robot_free ?r))
             (at end(robot_at ?r ?p1))
-            (at end(not (robot_at ?r ?p2)))
+            ;(at end(not (robot_at ?r ?p2)))
             (at end(photo_taken ?m1))
-            (at end(not(photo_untaken ?m1)))  
-            (at end(increase (num_photo_taken) 1))  
+            (at end(not(photo_untaken ?m1)))
+            (at end(increase (num_photo_taken) 1))
         )
     )
 
@@ -112,21 +111,21 @@
             (at end(robot_at ?r ?p1))
             (at end(not (robot_at ?r ?p2)))
             (at end(photo_taken ?m1))
-            (at end(not(photo_untaken ?m1)))  
-            (at end(increase (num_photo_taken) 1))  
+            (at end(not(photo_untaken ?m1)))
+            (at end(increase (num_photo_taken) 1))
         )
     )
 
     (:durative-action return_to_base
         :parameters (?r - robot ?base ?p - point)
         :duration (= ?duration 7)
-        :condition (and 
+        :condition (and
             (at start(robot_free ?r))
             (at start(is_base ?base))
             (at start(robot_at ?r ?p))
             ; (at start(= (num_photo_taken) (num_marker)))
         )
-        :effect (and 
+        :effect (and
             (at start(not(robot_free ?r)))
             (at end(robot_free ?r))
             (at end(robot_at ?r ?base))
