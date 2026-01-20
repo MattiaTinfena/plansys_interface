@@ -79,7 +79,7 @@ class DetectIdAction : public plansys2::ActionExecutorClient {
 			GoToPoint::Goal goal_msg{};
 
 			goal_msg.goal = goals[wp_to_navigate];
-			goal_msg.capture_img = true;
+			goal_msg.capture_img = false;
 			RCLCPP_INFO(get_logger(), "goal created");
 
 			goal_sent_ = true;

@@ -97,6 +97,8 @@ void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr &msg) {
 		return;
 	}
 
+	auto result_msg = std::make_shared<GoToPoint::Result>();
+
 	try {
 		cv::Mat img = cv_bridge::toCvShare(msg, "bgr8")->image;
 		std::vector<int> markerIds;
@@ -110,61 +112,73 @@ void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr &msg) {
 
 		int x_center = 0, y_center = 0;
 
-		if (markerIds.size() == 1) {
-			for (int i = 0; i < markerCorners[0].size(); i++) {
-				x_center += markerCorners[0][i].x;
-				y_center += markerCorners[0][i].y;
-			}
-			x_center /= 4;
-			y_center /= 4;
+		if (markerIds.size() != 1) {
+			return;
+		}
 
-			const int x_error = 640 / 2 - x_center;
+		for (int i = 0; i < markerCorners[0].size(); i++) {
+			x_center += markerCorners[0][i].x;
+			y_center += markerCorners[0][i].y;
+		}
+		x_center /= 4;
+		y_center /= 4;
 
-			geometry_msgs::msg::Twist twist{};
+		const int x_error = 640 / 2 - x_center;
 
-			if (std::abs(x_error) < 20) {
-				align = false;
-				std::cout << "CORRECTLY ALIGNED" << std::endl;
-				velocity_publisher->publish(twist);
-				auto result_msg = std::make_shared<GoToPoint::Result>();
-				result_msg->success = true;
-				result_msg->detected_id = markerIds[0];
+		geometry_msgs::msg::Twist twist{};
+		bool aligned = std::abs(x_error) < 20;
 
-				if (go_to_point_node->goal_handle->get_goal()->capture_img) {
-					double radius = 0;
-					for (int i = 0; i < 4; i++) {
-						double act_dist =
-							std::hypot(x_center - markerCorners[0][i].x,
-									   y_center - markerCorners[0][i].y);
-						std::cout << "act_dist: " << act_dist << std::endl;
-
-						if (radius < act_dist) {
-							radius = act_dist;
-						}
-					}
-					std::cout << "Radius: " << radius << std::endl;
-					std::cout << "Center : " << x_center << ", " << y_center
-							  << std::endl;
-
-					cv::Point center((int)x_center, (int)y_center);
-
-					cv::circle(img, center, (int)radius, cv::Scalar(0, 0, 255),
-							   1);
-					cv::imshow("Image with circle", img);
-					cv::waitKey(1);
-				}
-
-				go_to_point_node->goal_handle->succeed(result_msg);
-				return;
-			}
-
+		if (!aligned) {
 			if (x_error < 0) {
 				twist.angular.z = -0.2;
 			} else {
 				twist.angular.z = 0.2;
 			}
-			velocity_publisher->publish(twist);
+		} else {
+			std::cout << "CORRECTLY ALIGNED" << std::endl;
+			// velocity_publisher->publish(twist);
+			// auto result_msg = std::make_shared<GoToPoint::Result>();
+			result_msg->success = true;
+			result_msg->detected_id = markerIds[0];
+
+			if (!go_to_point_node->goal_handle->get_goal()->capture_img) {
+				align = false;
+				go_to_point_node->goal_handle->succeed(result_msg);
+				velocity_publisher->publish(twist);
+				return;
+			}
 		}
+
+		if (aligned && go_to_point_node->goal_handle->get_goal()->capture_img) {
+			double radius = 0;
+			for (int i = 0; i < 4; i++) {
+				double act_dist = std::hypot(x_center - markerCorners[0][i].x,
+											 y_center - markerCorners[0][i].y);
+				std::cout << "act_dist: " << act_dist << std::endl;
+
+				if (radius < act_dist) {
+					radius = act_dist;
+				}
+			}
+			if (radius < 160 * 0.5) {
+				std::cout << "Radius: " << radius << std::endl;
+				twist.linear.x = 0.2;
+			} else {
+				align = false;
+
+				std::cout << "Radius: " << radius << std::endl;
+				std::cout << "Center : " << x_center << ", " << y_center
+						  << std::endl;
+
+				cv::Point center((int)x_center, (int)y_center);
+
+				cv::circle(img, center, (int)radius, cv::Scalar(0, 0, 255), 3);
+				cv::imshow("Image with circle", img);
+				cv::waitKey(1);
+				go_to_point_node->goal_handle->succeed(result_msg);
+			}
+		}
+		velocity_publisher->publish(twist);
 
 	} catch (cv_bridge::Exception &e) {
 		RCLCPP_ERROR(rclcpp::get_logger("subscriber"),
