@@ -129,16 +129,18 @@ void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr &msg) {
 		bool aligned = std::abs(x_error) < 20;
 
 		if (!aligned) {
+			std::cout << "not aligned, aligning" << std::endl;
 			if (x_error < 0) {
 				twist.angular.z = -0.2;
 			} else {
 				twist.angular.z = 0.2;
 			}
 		} else {
-			result_msg->success = true;
-			result_msg->detected_id = markerIds[0];
-
+			std::cout << "correclty aligned" << std::endl;
 			if (!go_to_point_node->goal_handle->get_goal()->capture_img) {
+				std::cout << "no image to capture, ok!" << std::endl;
+				result_msg->success = true;
+				result_msg->detected_id = markerIds[0];
 				align = false;
 				go_to_point_node->goal_handle->succeed(result_msg);
 				velocity_publisher->publish(twist);
@@ -147,6 +149,8 @@ void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr &msg) {
 		}
 
 		if (aligned && go_to_point_node->goal_handle->get_goal()->capture_img) {
+			std::cout << "approaching image" << std::endl;
+
 			double radius = 0;
 			for (int i = 0; i < 4; i++) {
 				double act_dist = std::hypot(x_center - markerCorners[0][i].x,
@@ -156,8 +160,11 @@ void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr &msg) {
 				}
 			}
 			if (radius < 160 * 0.5) {
+				std::cout << "image far away, approach velocity" << std::endl;
 				twist.linear.x = 0.2;
 			} else {
+				std::cout << "image reached, sending success" << std::endl;
+
 				align = false;
 
 				cv::Point center((int)x_center, (int)y_center);
@@ -168,6 +175,8 @@ void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr &msg) {
 				cv::imshow("Image with circle", img);
 				cv::waitKey(3000);
 				cv::destroyAllWindows();
+				result_msg->success = true;
+				result_msg->detected_id = markerIds[0];
 				go_to_point_node->goal_handle->succeed(result_msg);
 			}
 		}
